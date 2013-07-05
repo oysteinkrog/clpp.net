@@ -23,16 +23,11 @@ namespace Clpp.Core.Scan
             _maxElements = maxElements;
         }
 
-        public static ClppScan CreateBestScan(ClppContext clppContext, long valueSize, long maxElements)
-        {
-            throw new NotImplementedException();
-        }
 
         public abstract void PopDatas();
-
-        public abstract void PopDatas(IntPtr dataSetPt);
-        public abstract void PushCLDatas(ComputeBuffer<byte> computeBuffer, long datasetSize);
-        public abstract void PushDatas(IntPtr values, long datasetSize);
+        public abstract void PopDatas(IntPtr dataSetPtr);
+        public abstract void PushCLDatas(ComputeBuffer<byte> computeBuffer, long dataSetSize);
+        public abstract void PushDatas(IntPtr values, long dataSetSize);
         public abstract void Scan();
     }
 }

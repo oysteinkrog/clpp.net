@@ -50,6 +50,7 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Scan\ClppScanGPU.cs" />
+    <Compile Include="Scan\ClppScanDefault.cs" />
     <Compile Include="Utilities\EmbeddedResourceUtilities.cs" />
     <Compile Include="ClppProgram.cs" />
     <Compile Include="Scan\ClppScan.cs" />
@@ -58,6 +59,7 @@
   <ItemGroup>
     <None Include="packages.config" />
     <EmbeddedResource Include="Scan\clppScanGPU.cl" />
+    <EmbeddedResource Include="Scan\clppScanDefault.cl" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />

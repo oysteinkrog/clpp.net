@@ -25,9 +25,9 @@ namespace Clpp.Core.Scan
 
 
         public abstract void PopDatas();
-        public abstract void PopDatas(IntPtr dataSetPtr);
-        public abstract void PushCLDatas(ComputeBuffer<byte> computeBuffer, long dataSetSize);
-        public abstract void PushDatas(IntPtr values, long dataSetSize);
+        public abstract void PopDatas(IntPtr outBuffer, long sizeBytes);
+        public abstract void PushCLDatas(ComputeBuffer<byte> computeBuffer);
+        public abstract void PushDatas(IntPtr outBuffer, long sizeBytes);
         public abstract void Scan();
     }
 }

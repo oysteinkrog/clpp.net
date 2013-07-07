@@ -74,27 +74,27 @@ namespace Clpp.Core.Scan
             _clppContext.CommandQueue.Read(_clBufferValues, true, 0, _valueSize*_dataSetSize, _values, null);
         }
 
-        public override void PopDatas(IntPtr dataSetPt)
+        public override void PopDatas(IntPtr outBuffer, long sizeBytes)
         {
-            _clppContext.CommandQueue.Read(_clBufferValues, true, 0, _valueSize*_dataSetSize, dataSetPt, null);
+            _clppContext.CommandQueue.Read(_clBufferValues, true, 0, _valueSize * sizeBytes, outBuffer, null);
         }
 
-        public override void PushCLDatas(ComputeBuffer<byte> clBufferValues, long datasetSize)
+        public override void PushCLDatas(ComputeBuffer<byte> clBufferValues)
         {
             _values = IntPtr.Zero;
 
             _isClBuffersOwner = false;
 
             _clBufferValues = clBufferValues;
-            _dataSetSize = datasetSize;
+            _dataSetSize = clBufferValues.Size;
         }
 
-        public override void PushDatas(IntPtr values, long datasetSize)
+        public override void PushDatas(IntPtr inBuffer, long sizeBytes)
         {
             //---- Store some values
-            _values = values;
-            var reallocate = datasetSize > _dataSetSize || !_isClBuffersOwner;
-            _dataSetSize = datasetSize;
+            _values = inBuffer;
+            var reallocate = sizeBytes > _dataSetSize || !_isClBuffersOwner;
+            _dataSetSize = sizeBytes;
 
             //---- Copy on the device
             if (reallocate)
@@ -112,7 +112,7 @@ namespace Clpp.Core.Scan
             else
             {
                 // Just resend
-                _clppContext.CommandQueue.Write(_clBufferValues, false, 0, _valueSize*_dataSetSize, values, null);
+                _clppContext.CommandQueue.Write(_clBufferValues, false, 0, _valueSize*_dataSetSize, _values, null);
             }
         }
 

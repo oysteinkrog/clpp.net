@@ -73,17 +73,17 @@ namespace Clpp.Core.Scan
             _clppContext.CommandQueue.Read(_clBufferValues, true, 0, _valueSize*_dataSetSize, _values, null);
         }
 
-        public override void PopDatas(IntPtr dataSetPtr)
+        public override void PopDatas(IntPtr outBuffer, long sizeBytes)
         {
-            _clppContext.CommandQueue.Read(_clBufferValues, true, 0, _valueSize*_dataSetSize, dataSetPtr, null);
+            _clppContext.CommandQueue.Read(_clBufferValues, true, 0, _valueSize * sizeBytes, outBuffer, null);
         }
 
-        public override void PushCLDatas(ComputeBuffer<byte> clBufferValues, long dataSetSize)
+        public override void PushCLDatas(ComputeBuffer<byte> clBufferValues)
         {
             _values = IntPtr.Zero;
             _clBufferValues = clBufferValues;
-            var recompute = dataSetSize != _dataSetSize;
-            _dataSetSize = dataSetSize;
+            var recompute = clBufferValues.Size != _dataSetSize;
+            _dataSetSize = clBufferValues.Size;
 
             //---- Compute the size of the different block we can use for '_datasetSize' (can be < maxElements)
             // Compute the number of levels requested to do the scan
@@ -110,13 +110,13 @@ namespace Clpp.Core.Scan
             _isClBuffersOwner = false;
         }
 
-        public override void PushDatas(IntPtr values, long dataSetSize)
+        public override void PushDatas(IntPtr inBuffer, long sizeBytes)
         {
             //---- Store some values
-            _values = values;
-            var reallocate = dataSetSize > _dataSetSize || !_isClBuffersOwner;
-            var recompute = dataSetSize != _dataSetSize;
-            _dataSetSize = dataSetSize;
+            _values = inBuffer;
+            var reallocate = sizeBytes > _dataSetSize || !_isClBuffersOwner;
+            var recompute = sizeBytes != _dataSetSize;
+            _dataSetSize = sizeBytes;
 
             //---- Compute the size of the different block we can use for '_datasetSize' (can be < maxElements)
             // Compute the number of levels requested to do the scan
@@ -156,7 +156,7 @@ namespace Clpp.Core.Scan
             else
             {
                 // Just resend
-                _clppContext.CommandQueue.Write(_clBufferValues, false, 0, _valueSize*_dataSetSize, values, null);
+                _clppContext.CommandQueue.Write(_clBufferValues, false, 0, _valueSize * _dataSetSize, _values, null);
             }
         }
 

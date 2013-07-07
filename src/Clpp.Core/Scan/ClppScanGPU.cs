@@ -57,17 +57,12 @@ namespace Clpp.Core.Scan
             if (disposing)
             {
                 //release managed resources
-                if (_isClBuffersOwner && _clBufferValues != null)
+                if (_isClBuffersOwner)
                 {
-                    _clBufferValues.Dispose();
-                    _clBufferValues = null;
+                    DisposeHelper.Dispose(ref _clBufferValues);
                 }
 
-                if (_kernelScan != null)
-                {
-                    _kernelScan.Dispose();
-                    _kernelScan = null;
-                }
+                DisposeHelper.Dispose(ref _kernelScan);
             }
             //release unmanaged resources
 
@@ -105,11 +100,7 @@ namespace Clpp.Core.Scan
             if (reallocate)
             {
                 //---- Release
-                if (_clBufferValues != null)
-                {
-                    _clBufferValues.Dispose();
-                }
-
+                DisposeHelper.Dispose(ref _clBufferValues);
 
                 //---- Allocate & copy on the device
                 _clBufferValues = new ComputeBuffer<byte>(_clppContext.Context,

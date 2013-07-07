@@ -8,8 +8,8 @@ namespace Clpp.Core.Scan
     public class ClppScanDefault : ClppScan
     {
         private readonly ComputeProgram _kernelProgram;
-        private readonly ComputeKernel _kernelScan;
-        private readonly ComputeKernel _kernelUniformAdd;
+        private ComputeKernel _kernelScan;
+        private ComputeKernel _kernelUniformAdd;
         private long[] _blockSumsSizes;
         private ComputeMemory[] _clBufferBlockSums;
         private string _kernelSource;
@@ -57,6 +57,19 @@ namespace Clpp.Core.Scan
                 {
                     _clBufferValues.Dispose();
                 }
+
+                if (_kernelScan != null)
+                {
+                    _kernelScan.Dispose();
+                    _kernelScan = null;
+                }
+
+                if (_kernelUniformAdd != null)
+                {
+                    _kernelUniformAdd.Dispose();
+                    _kernelUniformAdd = null;
+                }
+
                 FreeBlockSums();
             }
             //release unmanaged resources
@@ -164,7 +177,6 @@ namespace Clpp.Core.Scan
         {
             _kernelScan.SetLocalArgument(1, _workGroupSize*_valueSize);
 
-            var ev = new List<ComputeEventBase>();
 
             // Apply the scan to each level
             ComputeMemory clValues = _clBufferValues;
@@ -177,7 +189,7 @@ namespace Clpp.Core.Scan
                 _kernelScan.SetMemoryArgument(2, _clBufferBlockSums[i]);
                 _kernelScan.SetValueArgument(3, (uint) _blockSumsSizes[i]);
 
-                _clppContext.CommandQueue.Execute(_kernelScan, null, globalWorkSize, localWorkSize, ev);
+                _clppContext.CommandQueue.Execute(_kernelScan, null, globalWorkSize, localWorkSize, null);
 
                 clValues = _clBufferBlockSums[i];
             }
@@ -194,7 +206,7 @@ namespace Clpp.Core.Scan
                 _kernelUniformAdd.SetMemoryArgument(1, _clBufferBlockSums[i]);
                 _kernelUniformAdd.SetValueArgument(2, (int)_blockSumsSizes[i]);
 
-                _clppContext.CommandQueue.Execute(_kernelUniformAdd, null, globalWorkSize, localWorkSize, ev);
+                _clppContext.CommandQueue.Execute(_kernelUniformAdd, null, globalWorkSize, localWorkSize, null);
             }
         }
 

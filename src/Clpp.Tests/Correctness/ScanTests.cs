@@ -55,7 +55,12 @@ namespace Clpp.Tests.Correctness
                 {
                     Assert.AreEqual(testData[i], verifyData[i]);
                 }
+
             }
+
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+            GC.WaitForFullGCComplete();
         }
 
         [Test]
@@ -71,7 +76,7 @@ namespace Clpp.Tests.Correctness
                 for (var i = 0; i < testData.Length; i++)
                 {
                     testData[i] = (uint) i;
-//                    testData[i] = (uint) r.Next();
+                    //                    testData[i] = (uint) r.Next();
                 }
 
                 var verifyData = new uint[testDataSize];
@@ -105,6 +110,10 @@ namespace Clpp.Tests.Correctness
                     Assert.AreEqual(testData[i], verifyData[i]);
                 }
             }
+
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+            GC.WaitForFullGCComplete();
         }
     }
 }

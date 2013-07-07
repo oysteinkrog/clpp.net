@@ -7,7 +7,7 @@ namespace Clpp.Core.Scan
 {
     public class ClppScanGPU : ClppScan
     {
-        private readonly ComputeKernel _kernelScan;
+        private ComputeKernel _kernelScan;
         private ComputeProgram _kernelScanProgram;
         private string _kernelSource;
 
@@ -60,6 +60,13 @@ namespace Clpp.Core.Scan
                 if (_isClBuffersOwner && _clBufferValues != null)
                 {
                     _clBufferValues.Dispose();
+                    _clBufferValues = null;
+                }
+
+                if (_kernelScan != null)
+                {
+                    _kernelScan.Dispose();
+                    _kernelScan = null;
                 }
             }
             //release unmanaged resources
@@ -136,8 +143,7 @@ namespace Clpp.Core.Scan
             _kernelScan.SetValueArgument<uint>(3, (uint) _dataSetSize);
             _kernelScan.SetValueArgument<uint>(4, (uint) blockSize);
 
-            var ev = new List<ComputeEventBase>();
-            _clppContext.CommandQueue.Execute(_kernelScan, null, globalWorkSize, localWorkSize, ev);
+            _clppContext.CommandQueue.Execute(_kernelScan, null, globalWorkSize, localWorkSize, null);
 
             //            _clppContext.CommandQueue.Wait(ev);
         }

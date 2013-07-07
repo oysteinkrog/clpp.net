@@ -10,7 +10,7 @@ namespace Clpp.Tests.Correctness
     public class ScanTests
     {
         [Test]
-        public void TestBasicScanDefault([Values(1024)] int testDataSize)
+        public void TestBasicScanDefault([Values(1024 * 1024 * 10)] int testDataSize)
         {
             using (var c = new ClppContext(1, 0))
             {
@@ -59,7 +59,7 @@ namespace Clpp.Tests.Correctness
         }
 
         [Test]
-        public void TestBasicScanGPU([Values(1024)] int testDataSize)
+        public void TestBasicScanGPU([Values(1024*1024*10)] int testDataSize)
         {
             using (var c = new ClppContext(0, 0))
             {

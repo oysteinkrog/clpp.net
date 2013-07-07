@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Linq;
 using Cloo;
 using Clpp.Core.Utilities;
 
@@ -13,6 +15,48 @@ namespace Clpp.Core
         private OwnedObject<ComputeContext> _context;
 
         public ClppContext() : this(0, 0) {}
+
+
+        public ClppContext(ComputeDeviceTypes deviceTypes)
+        {
+            var platforms = ComputePlatform.Platforms;
+            _platform =  platforms.First(a=>a.Devices.Any(b=>b.Type.HasFlag(deviceTypes)));
+
+            if (_platform.Vendor.Equals("Intel", StringComparison.OrdinalIgnoreCase))
+            {
+                Vendor = VendorEnum.Intel;
+            }
+            else if (_platform.Vendor.Equals("AMD"))
+            {
+                Vendor = VendorEnum.AMD;
+            }
+            else if (_platform.Vendor.Equals("Advanced Micro Devices"))
+            {
+                Vendor = VendorEnum.AMD;
+            }
+            else if (_platform.Vendor.Equals("NVidia"))
+            {
+                Vendor = VendorEnum.NVidia;
+            }
+            else if (_platform.Vendor.Equals("Apple"))
+            {
+                Vendor = VendorEnum.NVidia;
+            }
+
+            Device = _platform.Devices.First(a => a.Type.HasFlag(deviceTypes));
+
+            var context = new ComputeContext(new List<ComputeDevice>
+                                             {
+                                                 Device
+                                             },
+                                             new ComputeContextPropertyList(_platform),
+                                             ErrorHandler,
+                                             IntPtr.Zero);
+            _context = new OwnedObject<ComputeContext>(context, true);
+
+            var commandQueue = new ComputeCommandQueue(Context, Device, ComputeCommandQueueFlags.Profiling);
+            _commandQueue = new OwnedObject<ComputeCommandQueue>(commandQueue, true);
+        }
 
         public ClppContext(int platformId, int deviceId)
         {

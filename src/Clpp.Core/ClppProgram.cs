@@ -1,5 +1,6 @@
 using System;
 using Cloo;
+using Clpp.Core.Utilities;
 
 namespace Clpp.Core
 {
@@ -32,7 +33,13 @@ namespace Clpp.Core
             // get rid of unmanaged resources
         }
 
-        protected string PreProcess(string programSource)
+        protected string GetKernelSource(string programSourceResourcePath)
+        {
+            var source = EmbeddedResourceUtilities.ReadEmbeddedStream(programSourceResourcePath);
+            return PreProcess(source);
+        }
+
+        protected virtual string PreProcess(string programSource)
         {
             var source = "";
             switch (_clppContext.Vendor)

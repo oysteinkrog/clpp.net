@@ -1,22 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using Cloo;
 using Clpp.Core.Utilities;
 
 namespace Clpp.Core.Scan
 {
-    public class ClppScanGPU : ClppScan
+    public class ClppScanGPU<T> : ClppScan<T> where T : struct
     {
         private ComputeKernel _kernelScan;
         private ComputeProgram _kernelScanProgram;
         private string _kernelSource;
 
-        public ClppScanGPU(ClppContext clppContext, long valueSize, long maxElements)
-            : base(clppContext, valueSize, maxElements)
+        public ClppScanGPU(ClppContext clppContext, long maxElements)
+            : base(clppContext, maxElements)
         {
-            var source = EmbeddedResourceUtilities.ReadEmbeddedStream("Clpp.Core.Scan.clppScanGPU.cl");
-
-            _kernelSource = PreProcess(source);
+            _kernelSource = GetKernelSource("Clpp.Core.Scan.clppScanGPU.cl");
             _kernelScanProgram = new ComputeProgram(clppContext.Context, _kernelSource);
 
 
@@ -57,12 +56,17 @@ namespace Clpp.Core.Scan
             if (disposing)
             {
                 //release managed resources
-                if (_isClBuffersOwner)
+                if (_isClBuffersOwner && _clBufferValues != null)
                 {
-                    DisposeHelper.Dispose(ref _clBufferValues);
+                    _clBufferValues.Dispose();
+                    _clBufferValues = null;
                 }
 
-                DisposeHelper.Dispose(ref _kernelScan);
+                if (_kernelScan != null)
+                {
+                    _kernelScan.Dispose();
+                    _kernelScan = null;
+                }
             }
             //release unmanaged resources
 
@@ -71,67 +75,73 @@ namespace Clpp.Core.Scan
 
         public override void PopDatas()
         {
-            _clppContext.CommandQueue.Read(_clBufferValues, true, 0, _valueSize*_dataSetSize, _values, null);
+            _clppContext.CommandQueue.Read(_clBufferValues, true, 0, _valuesCount, _values, null);
         }
 
-        public override void PopDatas(IntPtr outBuffer, long sizeBytes)
+        public override void PopDatas(IntPtr dataSetPtr, long dataSetCount)
         {
-            _clppContext.CommandQueue.Read(_clBufferValues, true, 0, _valueSize * sizeBytes, outBuffer, null);
+            if (dataSetCount < _valuesCount)
+                throw new ArgumentException("buffer not big enough", "dataSetCount");
+            
+            _clppContext.CommandQueue.Read(_clBufferValues, true, 0, _valuesCount, dataSetPtr, null);
         }
 
-        public override void PushCLDatas(ComputeBuffer<byte> clBufferValues)
+        public override void PushCLDatas(ComputeBuffer<T> clBufferValues)
         {
             _values = IntPtr.Zero;
+            _valuesCount = 0;
 
             _isClBuffersOwner = false;
 
             _clBufferValues = clBufferValues;
-            _dataSetSize = clBufferValues.Size;
         }
 
-        public override void PushDatas(IntPtr inBuffer, long sizeBytes)
+        public override void PushDatas(IntPtr inBuffer, long inBufferCount)
         {
             //---- Store some values
             _values = inBuffer;
-            var reallocate = sizeBytes > _dataSetSize || !_isClBuffersOwner;
-            _dataSetSize = sizeBytes;
+            var reallocate = inBufferCount > _valuesCount || !_isClBuffersOwner;
+            _valuesCount = inBufferCount;
 
             //---- Copy on the device
             if (reallocate)
             {
                 //---- Release
-                DisposeHelper.Dispose(ref _clBufferValues);
+                if (_clBufferValues != null)
+                {
+                    _clBufferValues.Dispose();
+                }
 
                 //---- Allocate & copy on the device
-                _clBufferValues = new ComputeBuffer<byte>(_clppContext.Context,
+                _clBufferValues = new ComputeBuffer<T>(_clppContext.Context,
                                                           ComputeMemoryFlags.ReadWrite | ComputeMemoryFlags.UseHostPointer,
-                                                          _valueSize*_dataSetSize,
+                                                          _valuesCount,
                                                           _values);
                 _isClBuffersOwner = true;
             }
             else
             {
                 // Just resend
-                _clppContext.CommandQueue.Write(_clBufferValues, false, 0, _valueSize*_dataSetSize, _values, null);
+                _clppContext.CommandQueue.Write(_clBufferValues, false, 0, inBufferCount, inBuffer, null);
             }
         }
 
         public override void Scan()
         {
-            var blockSize = _dataSetSize/_workGroupSize;
+            var blockSize = _valuesCount / _workGroupSize;
             var B = blockSize*_workGroupSize;
-            if ((_dataSetSize%_workGroupSize) > 0)
+            if ((_valuesCount % _workGroupSize) > 0)
             {
                 blockSize++;
             }
 
             var localWorkSize = new long[] {_workGroupSize};
-            var globalWorkSize = new[] {ToMultipleOf(_dataSetSize/blockSize, _workGroupSize)};
+            var globalWorkSize = new[] { ToMultipleOf(_valuesCount / blockSize, _workGroupSize) };
 
-            _kernelScan.SetLocalArgument(0, _workGroupSize*_valueSize);
+            _kernelScan.SetLocalArgument(0, _workGroupSize * _valueSize);
             _kernelScan.SetMemoryArgument(1, _clBufferValues);
             _kernelScan.SetValueArgument<uint>(2, (uint) B);
-            _kernelScan.SetValueArgument<uint>(3, (uint) _dataSetSize);
+            _kernelScan.SetValueArgument<uint>(3, (uint)_valuesCount);
             _kernelScan.SetValueArgument<uint>(4, (uint) blockSize);
 
             _clppContext.CommandQueue.Execute(_kernelScan, null, globalWorkSize, localWorkSize, null);

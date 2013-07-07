@@ -1,5 +1,7 @@
 ﻿#pragma OPENCL EXTENSION cl_amd_printf : enable
-#define T int
+
+//#define T int
+
 __kernel 
 void kernel__ExclusivePrefixScanSmall(
 	__global T* input,

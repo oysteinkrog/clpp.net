@@ -5,7 +5,7 @@ using Clpp.Core.Utilities;
 
 namespace Clpp.Core.Scan
 {
-    public class ClppScanDefault : ClppScan
+    public class ClppScanDefault<T> : ClppScan<T> where T : struct
     {
         private readonly ComputeProgram _kernelProgram;
         private ComputeKernel _kernelScan;
@@ -15,11 +15,10 @@ namespace Clpp.Core.Scan
         private string _kernelSource;
         private int _pass;
 
-        public ClppScanDefault(ClppContext clppContext, long valueSize, long maxElements) : base(clppContext, valueSize, maxElements)
+        public ClppScanDefault(ClppContext clppContext, long maxElements)
+            : base(clppContext, maxElements)
         {
-            var source = EmbeddedResourceUtilities.ReadEmbeddedStream("Clpp.Core.Scan.clppScanDefault.cl");
-
-            _kernelSource = PreProcess(source);
+            _kernelSource = GetKernelSource("Clpp.Core.Scan.clppScanDefault.cl");
             _kernelProgram = new ComputeProgram(clppContext.Context, _kernelSource);
 
             const string buildOptions = "";
@@ -53,13 +52,22 @@ namespace Clpp.Core.Scan
             if (disposing)
             {
                 //release managed resources
-                if (_isClBuffersOwner)
+                if (_isClBuffersOwner && _clBufferValues != null)
                 {
-                    DisposeHelper.Dispose(ref _clBufferValues);
+                    _clBufferValues.Dispose();
                 }
 
-                DisposeHelper.Dispose(ref _kernelScan);
-                DisposeHelper.Dispose(ref _kernelUniformAdd);
+                if (_kernelScan != null)
+                {
+                    _kernelScan.Dispose();
+                    _kernelScan = null;
+                }
+
+                if (_kernelUniformAdd != null)
+                {
+                    _kernelUniformAdd.Dispose();
+                    _kernelUniformAdd = null;
+                }
 
                 FreeBlockSums();
             }
@@ -70,27 +78,31 @@ namespace Clpp.Core.Scan
 
         public override void PopDatas()
         {
-            _clppContext.CommandQueue.Read(_clBufferValues, true, 0, _valueSize*_dataSetSize, _values, null);
+            _clppContext.CommandQueue.Read(_clBufferValues, true, 0, _valuesCount, _values, null);
         }
 
-        public override void PopDatas(IntPtr outBuffer, long sizeBytes)
+        public override void PopDatas(IntPtr dataSetPtr, long dataSetCount)
         {
-            _clppContext.CommandQueue.Read(_clBufferValues, true, 0, _valueSize * sizeBytes, outBuffer, null);
+            if (dataSetCount < _valuesCount)
+                throw new ArgumentException("buffer not big enough", "valuesCount");
+
+            _clppContext.CommandQueue.Read(_clBufferValues, true, 0, dataSetCount, dataSetPtr, null);
         }
 
-        public override void PushCLDatas(ComputeBuffer<byte> clBufferValues)
+        public override void PushCLDatas(ComputeBuffer<T> clBufferValues)
         {
             _values = IntPtr.Zero;
             _clBufferValues = clBufferValues;
-            var recompute = clBufferValues.Size != _dataSetSize;
-            _dataSetSize = clBufferValues.Size;
+
+            var recompute = clBufferValues.Count != _valuesCount;
+            _valuesCount = clBufferValues.Count;
 
             //---- Compute the size of the different block we can use for '_datasetSize' (can be < maxElements)
             // Compute the number of levels requested to do the scan
             if (recompute)
             {
                 _pass = 0;
-                var n = _dataSetSize;
+                var n = _valuesCount;
                 do
                 {
                     n = (n + _workGroupSize - 1)/_workGroupSize; // round up
@@ -98,7 +110,7 @@ namespace Clpp.Core.Scan
                 } while (n > 1);
 
                 // Compute the block-sum sizes
-                n = _dataSetSize;
+                n = _valuesCount;
                 for (uint i = 0; i < _pass; i++)
                 {
                     _blockSumsSizes[i] = n;
@@ -110,20 +122,20 @@ namespace Clpp.Core.Scan
             _isClBuffersOwner = false;
         }
 
-        public override void PushDatas(IntPtr inBuffer, long sizeBytes)
+        public override void PushDatas(IntPtr values, long dataSetSize)
         {
             //---- Store some values
-            _values = inBuffer;
-            var reallocate = sizeBytes > _dataSetSize || !_isClBuffersOwner;
-            var recompute = sizeBytes != _dataSetSize;
-            _dataSetSize = sizeBytes;
+            _values = values;
+            var reallocate = dataSetSize > _valuesCount || !_isClBuffersOwner;
+            var recompute = dataSetSize != _valuesCount;
+            _valuesCount = dataSetSize;
 
             //---- Compute the size of the different block we can use for '_datasetSize' (can be < maxElements)
             // Compute the number of levels requested to do the scan
             if (recompute)
             {
                 _pass = 0;
-                var n = _dataSetSize;
+                var n = _valuesCount;
                 do
                 {
                     n = (n + _workGroupSize - 1)/_workGroupSize; // round up
@@ -131,7 +143,7 @@ namespace Clpp.Core.Scan
                 } while (n > 1);
 
                 // Compute the block-sum sizes
-                n = _dataSetSize;
+                n = _valuesCount;
                 for (uint i = 0; i < _pass; i++)
                 {
                     _blockSumsSizes[i] = n;
@@ -144,25 +156,29 @@ namespace Clpp.Core.Scan
             if (reallocate)
             {
                 //---- Release
-                DisposeHelper.Dispose(ref _clBufferValues);
+                if (_clBufferValues != null)
+                {
+                    _clBufferValues.Dispose();
+                }
+
 
                 //---- Allocate & copy on the device
-                _clBufferValues = new ComputeBuffer<byte>(_clppContext.Context,
+                _clBufferValues = new ComputeBuffer<T>(_clppContext.Context,
                                                           ComputeMemoryFlags.ReadWrite | ComputeMemoryFlags.UseHostPointer,
-                                                          _valueSize*_dataSetSize,
+                                                          _valuesCount,
                                                           _values);
                 _isClBuffersOwner = true;
             }
             else
             {
                 // Just resend
-                _clppContext.CommandQueue.Write(_clBufferValues, false, 0, _valueSize * _dataSetSize, _values, null);
+                _clppContext.CommandQueue.Write(_clBufferValues, false, 0, _valuesCount, values, null);
             }
         }
 
         public override void Scan()
         {
-            _kernelScan.SetLocalArgument(1, _workGroupSize*_valueSize);
+            _kernelScan.SetLocalArgument(1, _workGroupSize);
 
 
             // Apply the scan to each level

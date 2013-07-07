@@ -51,6 +51,7 @@
     </Compile>
     <Compile Include="Scan\ClppScanGPU.cs" />
     <Compile Include="Scan\ClppScanDefault.cs" />
+    <Compile Include="Utilities\DisposeHelper.cs" />
     <Compile Include="Utilities\EmbeddedResourceUtilities.cs" />
     <Compile Include="ClppProgram.cs" />
     <Compile Include="Scan\ClppScan.cs" />

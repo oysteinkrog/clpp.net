@@ -2,12 +2,15 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using Cloo;
+using Clpp.Core.Utilities;
 
 namespace Clpp.Core
 {
     public class ClppContext : IDisposable
     {
         private readonly ComputePlatform _platform;
+        private OwnedObject<ComputeCommandQueue> _commandQueue;
+        private OwnedObject<ComputeContext> _context;
 
         public ClppContext() : this(0, 0) {}
 
@@ -41,17 +44,51 @@ namespace Clpp.Core
 
             Device = _platform.Devices[Math.Min(deviceId, _platform.Devices.Count)];
 
-            ContextPropertyList = new ComputeContextPropertyList(_platform);
-            Context = new ComputeContext(new List<ComputeDevice>
-                                         {
-                                             Device
-                                         },
-                                         ContextPropertyList,
-                                         ErrorHandler,
-                                         IntPtr.Zero);
+            var context = new ComputeContext(new List<ComputeDevice>
+                                             {
+                                                 Device
+                                             },
+                                             new ComputeContextPropertyList(_platform),
+                                             ErrorHandler,
+                                             IntPtr.Zero);
+            _context = new OwnedObject<ComputeContext>(context, true);
 
-            CommandQueue = new ComputeCommandQueue(Context, Device, ComputeCommandQueueFlags.Profiling);
+            var commandQueue = new ComputeCommandQueue(Context, Device, ComputeCommandQueueFlags.Profiling);
+            _commandQueue = new OwnedObject<ComputeCommandQueue>(commandQueue, true);
         }
+
+        public ClppContext(ComputeDevice device, ComputeContext context, ComputeCommandQueue commandQueue)
+        {
+            _platform = device.Platform;
+
+            if (_platform.Vendor.Equals("Intel", StringComparison.OrdinalIgnoreCase))
+            {
+                Vendor = VendorEnum.Intel;
+            }
+            else if (_platform.Vendor.Equals("AMD"))
+            {
+                Vendor = VendorEnum.AMD;
+            }
+            else if (_platform.Vendor.Equals("Advanced Micro Devices"))
+            {
+                Vendor = VendorEnum.AMD;
+            }
+            else if (_platform.Vendor.Equals("NVidia"))
+            {
+                Vendor = VendorEnum.NVidia;
+            }
+            else if (_platform.Vendor.Equals("Apple"))
+            {
+                Vendor = VendorEnum.NVidia;
+            }
+
+            Device = device;
+
+            _context = new OwnedObject<ComputeContext>(context, false);
+
+            _commandQueue = new OwnedObject<ComputeCommandQueue>(commandQueue, false);
+        }
+
 
         ~ClppContext()
         {
@@ -69,24 +106,22 @@ namespace Clpp.Core
             if (disposing)
             {
                 // get rid of managed resources
+                DisposeHelper.Dispose(ref _commandQueue);
+                DisposeHelper.Dispose(ref _context);
             }
             // get rid of unmanaged resources
-            if (CommandQueue != null)
-            {
-                CommandQueue.Dispose();
-                CommandQueue = null;
-            }
-
-            if (Context != null)
-            {
-                Context.Dispose();
-                Context = null;
-            }
         }
 
-        public ComputeCommandQueue CommandQueue { get; private set; }
-        public ComputeContext Context { get; private set; }
-        public ComputeContextPropertyList ContextPropertyList { get; private set; }
+        public ComputeCommandQueue CommandQueue
+        {
+            get { return _commandQueue.Value; }
+        }
+
+        public ComputeContext Context
+        {
+            get { return _context.Value; }
+        }
+
         public ComputeDevice Device { get; private set; }
 
         // only if you use unmanaged resources directly in B

@@ -89,7 +89,7 @@ namespace Clpp.Core.Scan
         public override void PushCLDatas(ComputeBuffer<T> clBufferValues)
         {
             _values = IntPtr.Zero;
-            _valuesCount = 0;
+            _valuesCount = clBufferValues.Count;
 
             _isClBuffersOwner = false;
 

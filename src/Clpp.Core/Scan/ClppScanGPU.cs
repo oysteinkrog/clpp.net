@@ -55,6 +55,18 @@ namespace Clpp.Core.Scan
         {
             if (disposing)
             {
+                if (_kernelScan != null)
+                {
+                    _kernelScan.Dispose();
+                    _kernelScan = null;
+                }
+                
+                if (_kernelScanProgram != null)
+                {
+                    _kernelScanProgram.Dispose();
+                    _kernelScanProgram = null;
+                }
+
                 //release managed resources
                 if (_isClBuffersOwner && _clBufferValues != null)
                 {
@@ -62,11 +74,7 @@ namespace Clpp.Core.Scan
                     _clBufferValues = null;
                 }
 
-                if (_kernelScan != null)
-                {
-                    _kernelScan.Dispose();
-                    _kernelScan = null;
-                }
+
             }
             //release unmanaged resources
 

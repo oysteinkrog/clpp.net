@@ -7,7 +7,7 @@ namespace Clpp.Core.Scan
 {
     public class ClppScanDefault<T> : ClppScan<T> where T : struct
     {
-        private readonly ComputeProgram _kernelProgram;
+        private ComputeProgram _kernelProgram;
         private ComputeKernel _kernelScan;
         private ComputeKernel _kernelUniformAdd;
         private long[] _blockSumsSizes;
@@ -67,6 +67,12 @@ namespace Clpp.Core.Scan
                 {
                     _kernelUniformAdd.Dispose();
                     _kernelUniformAdd = null;
+                }
+
+                if (_kernelProgram != null)
+                {
+                    _kernelProgram.Dispose();
+                    _kernelProgram = null;
                 }
 
                 FreeBlockSums();

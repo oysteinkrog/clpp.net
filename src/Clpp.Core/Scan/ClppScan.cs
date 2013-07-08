@@ -23,7 +23,9 @@ namespace Clpp.Core.Scan
                                                                  {typeof (float), "float"},
                                                                  {typeof (double), "double"},
                                                                  {typeof (int), "int"},
-                                                                 {typeof (uint), "uint"}
+                                                                 {typeof (uint), "uint"},
+                                                                 {typeof (long), "long"},
+                                                                 {typeof (ulong), "ulong"},
                                                              };
 
         public ClppScan(ClppContext clppContext, long maxElements) : base(clppContext)

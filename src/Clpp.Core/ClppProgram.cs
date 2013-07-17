@@ -24,9 +24,9 @@ namespace Clpp.Core
             GC.SuppressFinalize(this);
         }
 
-        protected virtual void Dispose(bool disposing)
+        protected virtual void Dispose(bool managed)
         {
-            if (disposing)
+            if (managed)
             {
                 // get rid of managed resources
             }

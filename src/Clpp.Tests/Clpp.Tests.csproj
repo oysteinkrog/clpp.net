@@ -49,6 +49,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Benchmarks\ScanPerformanceTest.cs" />
+    <Compile Include="Correctness\RadixSortTest.cs" />
     <Compile Include="Correctness\ScanTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

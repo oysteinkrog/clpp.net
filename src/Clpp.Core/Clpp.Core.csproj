@@ -52,6 +52,8 @@
     </Compile>
     <Compile Include="Scan\ClppScanGPU.cs" />
     <Compile Include="Scan\ClppScanDefault.cs" />
+    <Compile Include="Sort\ClppSort.cs" />
+    <Compile Include="Sort\ClppSortRadixSortGPU.cs" />
     <Compile Include="Utilities\DisposeHelper.cs" />
     <Compile Include="Utilities\EmbeddedResourceUtilities.cs" />
     <Compile Include="ClppProgram.cs" />
@@ -65,6 +67,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <EmbeddedResource Include="Sort\clppSortRadixSortGPU.cl" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />

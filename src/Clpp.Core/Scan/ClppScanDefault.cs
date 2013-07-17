@@ -47,39 +47,25 @@ namespace Clpp.Core.Scan
             Dispose(false);
         }
 
-        protected override void Dispose(bool disposing)
+        protected override void Dispose(bool managed)
         {
-            if (disposing)
+            if (managed)
             {
                 //release managed resources
                 if (_isClBuffersOwner && _clBufferValues != null)
                 {
-                    _clBufferValues.Dispose();
+                    DisposeHelper.Dispose(ref _clBufferValues);
                 }
 
-                if (_kernelScan != null)
-                {
-                    _kernelScan.Dispose();
-                    _kernelScan = null;
-                }
-
-                if (_kernelUniformAdd != null)
-                {
-                    _kernelUniformAdd.Dispose();
-                    _kernelUniformAdd = null;
-                }
-
-                if (_kernelProgram != null)
-                {
-                    _kernelProgram.Dispose();
-                    _kernelProgram = null;
-                }
+                DisposeHelper.Dispose(ref _kernelScan);
+                DisposeHelper.Dispose(ref _kernelUniformAdd);
+                DisposeHelper.Dispose(ref _kernelProgram);
 
                 FreeBlockSums();
             }
             //release unmanaged resources
 
-            base.Dispose(disposing);
+            base.Dispose(managed);
         }
 
         public override void PopDatas()

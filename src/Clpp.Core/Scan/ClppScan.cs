@@ -7,7 +7,6 @@ namespace Clpp.Core.Scan
 {
     public abstract class ClppScan<T> : ClppProgram where T : struct
     {
-        protected readonly ClppContext _clppContext;
         protected readonly long _maxElements;
         protected ComputeBuffer<T> _clBufferValues;
 
@@ -30,7 +29,6 @@ namespace Clpp.Core.Scan
 
         public ClppScan(ClppContext clppContext, long maxElements) : base(clppContext)
         {
-            _clppContext = clppContext;
             _valueSize = Marshal.SizeOf(typeof (T));
             _maxElements = maxElements;
         }

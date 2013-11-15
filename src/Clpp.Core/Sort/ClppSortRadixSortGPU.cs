@@ -155,8 +155,6 @@ namespace Clpp.Core.Sort
             // work-items, depending on the concrete device and each work-item processes more than one
             // stream element, usually 4, in order to hide latencies.
 
-            Stopwatch sw;
-
             var numBlocks = RoundUpDiv(_datasetSize, _workgroupSize*4);
             var Ndiv4 = RoundUpDiv(_datasetSize, 4);
 
